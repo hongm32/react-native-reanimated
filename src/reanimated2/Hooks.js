@@ -184,7 +184,7 @@ function styleDiff(oldStyle, newStyle) {
   return diff;
 }
 
-function styleUpdater(viewTag, updater, state, maybeViewRef, viewName) {
+function styleUpdater(viewDescriptor, updater, state, maybeViewRef) {
   'worklet';
   const animations = state.animations || {};
   const newValues = updater() || {};
@@ -232,7 +232,7 @@ function styleUpdater(viewTag, updater, state, maybeViewRef, viewName) {
     });
 
     if (Object.keys(updates).length) {
-      updateProps(viewTag.value, viewName, updates, maybeViewRef);
+      updateProps(viewDescriptor, updates, maybeViewRef);
     }
 
     if (!allFinished) {
@@ -259,16 +259,15 @@ function styleUpdater(viewTag, updater, state, maybeViewRef, viewName) {
   state.last = Object.assign({}, oldValues, newValues);
 
   if (Object.keys(diff).length !== 0) {
-    updateProps(viewTag.value, viewName, diff, maybeViewRef);
+    updateProps(viewDescriptor, diff, maybeViewRef);
   }
 }
 
 export function useAnimatedStyle(updater, dependencies) {
-  const viewTag = useSharedValue(-1);
+  const viewDescriptor = useSharedValue({ tag: -1, name: null }, false);
   const initRef = useRef(null);
   const inputs = Object.values(updater._closure);
   const viewRef = useRef(null);
-  const viewName = useSharedValue(null);
 
   // build dependencies
   if (dependencies === undefined) {
@@ -291,7 +290,7 @@ export function useAnimatedStyle(updater, dependencies) {
   useEffect(() => {
     const fun = () => {
       'worklet';
-      styleUpdater(viewTag, updater, remoteState, maybeViewRef, viewName);
+      styleUpdater(viewDescriptor, updater, remoteState, maybeViewRef);
     };
     const mapperId = startMapper(fun, inputs, []);
     return () => {
@@ -316,10 +315,9 @@ export function useAnimatedStyle(updater, dependencies) {
   }
 
   return {
-    viewTag,
+    viewDescriptor,
     initial,
     viewRef,
-    viewName,
   };
 }
 
